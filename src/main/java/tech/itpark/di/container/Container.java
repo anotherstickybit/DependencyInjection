@@ -19,7 +19,7 @@ public class Container {
     public void wire() {
         int count = 0;
         while (true) {
-            final ListIterator<Class<?>> iterator = definitions.listIterator();
+            final Iterator<Class<?>> iterator = definitions.iterator();
             int prevCount = count;
             if (definitions.size() == 0) break;
             while (iterator.hasNext()) {
@@ -31,7 +31,7 @@ public class Container {
                 final Constructor<?> constructor = constructors[0];
                 final Class<?>[] parameterTypes = constructor.getParameterTypes();
                 if (parameterTypes.length == 0) {
-                    createObject(cls, new ArrayList<>(), constructor);
+                    createObject(cls, Collections.emptyList(), constructor);
                     iterator.remove();
                     count++;
                     continue;
@@ -45,12 +45,12 @@ public class Container {
                 }
             }
             if (prevCount == count) {
-                throw new UnmetDependencyException("Unmet dependencies for " + iterator.previous());
+                throw new UnmetDependencyException("Unmet dependencies for " + definitions.toString());
             }
         }
     }
 
-    public List<Object> getConstructorParameters(Class<?>[] parameterTypes) {
+    private List<Object> getConstructorParameters(Class<?>[] parameterTypes) {
         final List<Object> parameters = new LinkedList<>();
         for (Class<?> parameterType : parameterTypes) {
             final Object parameter = objects.get(parameterType.getName());
@@ -59,9 +59,8 @@ public class Container {
         return parameters;
     }
 
-    public void createObject(Class<?> cls, List<Object> parameters, Constructor<?> constructor) {
+    private void createObject(Class<?> cls, List<Object> parameters, Constructor<?> constructor) {
         try {
-            if (cls.isInterface()) return;
             final Object o = constructor.newInstance(parameters.toArray());
             objects.put(o.getClass().getName(), o);
             for (Class<?> iface : cls.getInterfaces()) {

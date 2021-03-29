@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Container {
-    private final Map<String, Object> objects = new HashMap<>();
+    private final Map<Class<?>, Object> objects = new HashMap<>();
     private final List<Class<?>> definitions = new LinkedList<>();
 
     public void register(List<Class<?>> classes) {
@@ -37,8 +37,7 @@ public class Container {
                     continue;
                 }
                 final List<Object> parameters = getConstructorParameters(parameterTypes);
-                if (objects.keySet().containsAll(parameters.stream()
-                        .map(i -> i.getClass().getName()).collect(Collectors.toList()))) {
+                if (objects.keySet().containsAll(Arrays.asList(parameterTypes))) {
                     createObject(cls, parameters, constructor);
                     iterator.remove();
                     count++;
@@ -53,18 +52,22 @@ public class Container {
     private List<Object> getConstructorParameters(Class<?>[] parameterTypes) {
         final List<Object> parameters = new LinkedList<>();
         for (Class<?> parameterType : parameterTypes) {
-            final Object parameter = objects.get(parameterType.getName());
+            final Object parameter = objects.get(parameterType);
             if (!(parameter == null)) parameters.add(parameter);
         }
         return parameters;
     }
 
     private void createObject(Class<?> cls, List<Object> parameters, Constructor<?> constructor) {
+        if (cls.isInterface()) return;
         try {
             final Object o = constructor.newInstance(parameters.toArray());
-            objects.put(o.getClass().getName(), o);
+            objects.put(o.getClass(), o);
             for (Class<?> iface : cls.getInterfaces()) {
-                objects.put(iface.getName() + "_" + o.getClass().getName(), o);
+                if (objects.containsKey(iface)) {
+                    throw new DIException("More than one implementation of interface is not supported");
+                }
+                objects.put(iface, o);
             }
         } catch (Exception e) {
             throw new DIException(e);

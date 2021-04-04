@@ -74,4 +74,7 @@ public class Container {
         }
     }
 
+    public Map<Class<?>, Object> getObjects() {
+        return objects;
+    }
 }
